@@ -39,6 +39,13 @@ keys.addEventListener('click', (event) => {
     updateDisplay();
     return;
   }
+
+  // Handle Equals / Calculate Click (=)
+  if (target.dataset.action === 'calculate') {
+    handleEquals();
+    updateDisplay();
+    return;
+  }
 });
 
 // --- 5. Logic for Inputting Numbers ---
@@ -80,7 +87,24 @@ function handleOperator(nextOperator) {
   calculator.operator = nextOperator;
 }
 
-// --- 7. Basic Math Helper Function ---
+// --- 7. Logic for Equals Click (=) ---
+function handleEquals() {
+  const { firstOperand, displayValue, operator } = calculator;
+  const secondOperand = parseFloat(displayValue);
+
+  // Only calculate if we have a valid operator and first operand stored
+  if (operator && firstOperand !== null) {
+    const result = calculate(firstOperand, secondOperand, operator);
+
+    // Rounding to max 7 decimals prevents floating point issues like 0.1 + 0.2 = 0.30000000000000004
+    calculator.displayValue = `${parseFloat(result.toFixed(7))}`;
+    calculator.firstOperand = null;
+    calculator.operator = null;
+    calculator.waitingForSecondOperand = true;
+  }
+}
+
+// --- 8. Basic Math Helper Function ---
 function calculate(firstOperand, secondOperand, operator) {
   if (operator === '+') return firstOperand + secondOperand;
   if (operator === '-') return firstOperand - secondOperand;
