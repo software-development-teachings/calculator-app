@@ -40,6 +40,27 @@ keys.addEventListener('click', (event) => {
     return;
   }
 
+  // Handle Decimal Click (.)
+  if (target.dataset.action === 'decimal') {
+    inputDecimal();
+    updateDisplay();
+    return;
+  }
+
+  // Handle Clear Click (AC)
+  if (target.dataset.action === 'clear') {
+    resetCalculator();
+    updateDisplay();
+    return;
+  }
+
+  // Handle Delete / Backspace Click (DEL)
+  if (target.dataset.action === 'delete') {
+    handleDelete();
+    updateDisplay();
+    return;
+  }
+
   // Handle Equals / Calculate Click (=)
   if (target.dataset.action === 'calculate') {
     handleEquals();
@@ -62,7 +83,45 @@ function inputNumber(number) {
   }
 }
 
-// --- 6. Logic for Operator Handling ---
+// --- 6. Logic for Inputting Decimal ---
+function inputDecimal() {
+  // If waiting for second operand, clicking '.' should start a new decimal number '0.'
+  if (calculator.waitingForSecondOperand) {
+    calculator.displayValue = '0.';
+    calculator.waitingForSecondOperand = false;
+    return;
+  }
+
+  // Prevent multiple decimals in a single number (e.g., prevents "5.2.1")
+  if (!calculator.displayValue.includes('.')) {
+    calculator.displayValue += '.';
+  }
+}
+
+// --- 7. Logic for Clear (AC) ---
+function resetCalculator() {
+  calculator.displayValue = '0';
+  calculator.firstOperand = null;
+  calculator.waitingForSecondOperand = false;
+  calculator.operator = null;
+}
+
+// --- 8. Logic for Delete / Backspace (DEL) ---
+function handleDelete() {
+  // If we're waiting for a second operand, backspace should be ignored
+  if (calculator.waitingForSecondOperand) {
+    return;
+  }
+
+  // Remove the last character. If only one character remains, reset to '0'
+  if (calculator.displayValue.length > 1) {
+    calculator.displayValue = calculator.displayValue.slice(0, -1);
+  } else {
+    calculator.displayValue = '0';
+  }
+}
+
+// --- 9. Logic for Operator Handling ---
 function handleOperator(nextOperator) {
   const { firstOperand, displayValue, operator } = calculator;
   const inputValue = parseFloat(displayValue);
@@ -87,7 +146,7 @@ function handleOperator(nextOperator) {
   calculator.operator = nextOperator;
 }
 
-// --- 7. Logic for Equals Click (=) ---
+// --- 10. Logic for Equals Click (=) ---
 function handleEquals() {
   const { firstOperand, displayValue, operator } = calculator;
   const secondOperand = parseFloat(displayValue);
@@ -96,7 +155,7 @@ function handleEquals() {
   if (operator && firstOperand !== null) {
     const result = calculate(firstOperand, secondOperand, operator);
 
-    // Rounding to max 7 decimals prevents floating point issues like 0.1 + 0.2 = 0.30000000000000004
+    // Rounding to max 7 decimals prevents floating point issues
     calculator.displayValue = `${parseFloat(result.toFixed(7))}`;
     calculator.firstOperand = null;
     calculator.operator = null;
@@ -104,7 +163,7 @@ function handleEquals() {
   }
 }
 
-// --- 8. Basic Math Helper Function ---
+// --- 11. Basic Math Helper Function ---
 function calculate(firstOperand, secondOperand, operator) {
   if (operator === '+') return firstOperand + secondOperand;
   if (operator === '-') return firstOperand - secondOperand;
