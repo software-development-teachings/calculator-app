@@ -26,6 +26,18 @@ keys.addEventListener('click', (event) => {
     return;
   }
 
+  // Clear (AC) should always work, even in Error state
+  if (target.dataset.action === 'clear') {
+    resetCalculator();
+    updateDisplay();
+    return;
+  }
+
+  // Guard Clause: If in Error state, block all inputs until Clear (AC) is pressed
+  if (calculator.displayValue === 'Error') {
+    return;
+  }
+
   // Handle Number Clicks
   if (target.dataset.number) {
     inputNumber(target.dataset.number);
@@ -43,13 +55,6 @@ keys.addEventListener('click', (event) => {
   // Handle Decimal Click (.)
   if (target.dataset.action === 'decimal') {
     inputDecimal();
-    updateDisplay();
-    return;
-  }
-
-  // Handle Clear Click (AC)
-  if (target.dataset.action === 'clear') {
-    resetCalculator();
     updateDisplay();
     return;
   }
@@ -108,7 +113,7 @@ function resetCalculator() {
 
 // --- 8. Logic for Delete / Backspace (DEL) ---
 function handleDelete() {
-  // If we're waiting for a second operand, backspace should be ignored
+  // Ignore backspace if waiting for a second operand
   if (calculator.waitingForSecondOperand) {
     return;
   }
@@ -126,7 +131,7 @@ function handleOperator(nextOperator) {
   const { firstOperand, displayValue, operator } = calculator;
   const inputValue = parseFloat(displayValue);
 
-  // If an operator is already clicked, allow changing it before entering the second number
+  // Allow switching operators before typing the second number (e.g., user hits + then changes to -)
   if (operator && calculator.waitingForSecondOperand) {
     calculator.operator = nextOperator;
     return;
@@ -138,6 +143,15 @@ function handleOperator(nextOperator) {
   } else if (operator) {
     // Perform intermediate calculation if user chains operations (e.g., 5 + 3 + 2)
     const result = calculate(firstOperand, inputValue, operator);
+    
+    if (result === 'Error') {
+      calculator.displayValue = 'Error';
+      calculator.firstOperand = null;
+      calculator.operator = null;
+      calculator.waitingForSecondOperand = false;
+      return;
+    }
+
     calculator.displayValue = `${parseFloat(result.toFixed(7))}`;
     calculator.firstOperand = result;
   }
@@ -155,20 +169,32 @@ function handleEquals() {
   if (operator && firstOperand !== null) {
     const result = calculate(firstOperand, secondOperand, operator);
 
-    // Rounding to max 7 decimals prevents floating point issues
-    calculator.displayValue = `${parseFloat(result.toFixed(7))}`;
+    if (result === 'Error') {
+      calculator.displayValue = 'Error';
+    } else {
+      // Rounding to max 7 decimals prevents floating point precision bugs
+      calculator.displayValue = `${parseFloat(result.toFixed(7))}`;
+    }
+
     calculator.firstOperand = null;
     calculator.operator = null;
     calculator.waitingForSecondOperand = true;
   }
 }
 
-// --- 11. Basic Math Helper Function ---
+// --- 11. Basic Math Helper Function with Zero Guard ---
 function calculate(firstOperand, secondOperand, operator) {
   if (operator === '+') return firstOperand + secondOperand;
   if (operator === '-') return firstOperand - secondOperand;
   if (operator === '*') return firstOperand * secondOperand;
-  if (operator === '/') return firstOperand / secondOperand;
+
+  if (operator === '/') {
+    // Guard against division by zero
+    if (secondOperand === 0) {
+      return 'Error';
+    }
+    return firstOperand / secondOperand;
+  }
 
   return secondOperand;
 }
